@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISE · Name Spinner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080800;
+  --surface:   #0f0e00;
+  --border:    #2a2000;
+  --blue:      #ffd700;
+  --blue-bright:#ffe566;
+  --blue-dim:  #7a5c00;
+  --blue-glow: rgba(255,215,0,0.35);
+  --muted:     #3a3000;
+  --text:      #fff0b0;
+  --white:     #ffffff;
+  --gold:      #ffffff;
+  --cyan:      #ffd700;
+  --red:       #ff4d6d;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: 'Share Tech Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 80px;
+  overflow-x: hidden;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.1) 2px,
+    rgba(0,0,0,0.1) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#matrix {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  opacity: 0.15;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 900px;
+  padding: 0 20px;
+}
+
+/* TOPBAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+.topbar .logo { color: var(--blue); font-weight: bold; font-size: 0.72rem; }
+.topbar .blink { animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* HEADER */
+header { text-align: center; margin-bottom: 32px; }
+
+.dept-tag {
+  display: inline-block;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.6rem;
+  letter-spacing: 4px;
+  padding: 4px 14px;
+  border-radius: 2px;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: clamp(2rem, 7vw, 4rem);
+  letter-spacing: 4px;
+  color: var(--white);
+  text-shadow: 0 0 30px var(--blue-glow), 0 0 80px rgba(255,215,0,0.2);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+h1 span { color: var(--blue); }
+
+.sub {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 3px;
+}
+
+/* STATS */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--blue-dim);
+}
+.stat-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--white);
+  text-shadow: 0 0 14px var(--blue-glow);
+}
+.stat-label {
+  font-size: 0.55rem;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* PROGRESS */
+.prog-wrap { margin-bottom: 24px; }
+.prog-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.prog-bg {
+  background: var(--border);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+#progBar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--blue-dim), var(--blue), var(--white));
+  border-radius: 3px;
+  box-shadow: 0 0 12px var(--blue-glow);
+  transition: width 0.5s ease;
+}
+
+/* SPINNER PANEL */
+.spinner-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 40px 24px 32px;
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.spinner-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.06) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  border-color: var(--blue-dim);
+  border-style: solid;
+}
+.corner.tl { top:8px; left:8px;   border-width: 2px 0 0 2px; }
+.corner.tr { top:8px; right:8px;  border-width: 2px 2px 0 0; }
+.corner.bl { bottom:8px; left:8px;  border-width: 0 0 2px 2px; }
+.corner.br { bottom:8px; right:8px; border-width: 0 2px 2px 0; }
+
+.spin-num-badge {
+  position: absolute;
+  top: 12px; right: 14px;
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+
+.spin-meta {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+#nameDisplay {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: clamp(1.6rem, 5vw, 3rem);
+  letter-spacing: 2px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-break: break-word;
+  padding: 0 12px;
+  transition: color 0.15s;
+}
+
+#nameDisplay.idle   { color: var(--muted); }
+#nameDisplay.spin   { color: var(--blue-dim); }
+#nameDisplay.glitch { animation: glitch 0.08s steps(2) infinite; color: var(--blue); }
+#nameDisplay.winner { color: var(--white); text-shadow: 0 0 40px var(--blue-glow), 0 0 80px rgba(255,215,0,0.2); }
+#nameDisplay.allDone{ color: var(--cyan);  text-shadow: 0 0 30px rgba(0,229,255,0.5); }
+
+@keyframes glitch {
+  0%   { clip-path: inset(20% 0 50% 0); transform: translate(-3px,0); color: var(--blue); }
+  25%  { clip-path: inset(60% 0 10% 0); transform: translate(3px,0);  color: var(--white); }
+  50%  { clip-path: inset(10% 0 70% 0); transform: translate(-2px,0); color: var(--blue-bright); }
+  75%  { clip-path: inset(40% 0 30% 0); transform: translate(2px,0);  color: var(--white); }
+  100% { clip-path: inset(0);           transform: translate(0); }
+}
+
+.branch-badge {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 3px 14px;
+  border-radius: 2px;
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  min-height: 24px;
+  transition: all 0.3s;
+}
+.branch-badge.ise   { border-color: var(--blue-dim); color: var(--blue-bright); }
+.branch-badge.cseds { border-color: #004d66; color: var(--cyan); }
+
+/* CONTROLS */
+.controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+#spinBtn {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 3px;
+  padding: 14px 52px;
+  background: transparent;
+  color: var(--white);
+  border: 2px solid var(--blue);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px var(--blue-glow), inset 0 0 20px rgba(255,215,0,0.04);
+  text-shadow: 0 0 10px var(--blue-glow);
+}
+#spinBtn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--blue-dim), var(--blue));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s;
+  z-index: -1;
+}
+#spinBtn:hover { box-shadow: 0 0 36px var(--blue-glow); }
+#spinBtn:hover::before { transform: scaleX(1); }
+#spinBtn:active { transform: scale(0.97); }
+#spinBtn:disabled {
+  border-color: var(--muted);
+  color: var(--muted);
+  cursor: not-allowed;
+  box-shadow: none;
+  text-shadow: none;
+}
+#spinBtn:disabled::before { display: none; }
+
+.icon-btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.icon-btn:hover { border-color: var(--blue-dim); color: var(--text); }
+
+.speed-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 90px; height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  background: var(--blue);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--blue-glow);
+}
+
+.hint {
+  text-align: center;
+  font-size: 0.58rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+
+/* DONE BANNER */
+#doneBanner {
+  display: none;
+  background: rgba(255,215,0,0.04);
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+#doneBanner h2 {
+  font-family: 'Orbitron', monospace;
+  color: var(--cyan);
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+}
+#doneBanner p { color: var(--muted); font-size: 0.65rem; letter-spacing: 2px; }
+
+/* HISTORY */
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.section-title {
+  font-size: 0.6rem;
+  letter-spacing: 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+#historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+#historyList::-webkit-scrollbar { width: 3px; }
+#historyList::-webkit-scrollbar-track { background: transparent; }
+#historyList::-webkit-scrollbar-thumb { background: var(--border); }
+
+.h-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue-dim);
+  border-radius: 3px;
+  padding: 9px 14px;
+  font-size: 0.75rem;
+  animation: fadeSlide 0.3s ease;
+}
+.h-item.cseds-item { border-left-color: #004d66; }
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.h-num  { color: var(--blue-dim); font-size: 0.65rem; min-width: 32px; }
+.h-name { flex: 1; color: var(--white); }
+.h-branch {
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: var(--border);
+  color: var(--muted);
+}
+.h-branch.ise   { background: rgba(42,32,0,0.7); color: var(--blue-bright); }
+.h-branch.cseds { background: rgba(42,32,0,0.5);  color: var(--cyan); }
+
+/* CONFETTI */
+.confetti-piece {
+  position: fixed;
+  width: 8px; height: 8px;
+  border-radius: 1px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9998;
+  animation: confettiFall 1.5s ease-in forwards;
+}
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(400px) rotate(720deg); }
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="logo">[ ISE · CSE-DS DEPT ]</span>
+    <span id="clock">--:--:--</span>
+    <span><span class="blink">▮</span> SYSTEM READY</span>
+  </div>
+
+  <header>
+    <div class="dept-tag">Information Science &amp; Engineering</div>
+    <h1>NAME <span>SPIN</span>NER</h1>
+    <div class="sub">STUDENT RANDOM SELECTOR · 2ND YEAR · 2022 BATCH</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="sTotal">193</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-val" id="sPicked">0</div><div class="stat-label">Picked</div></div>
+    <div class="stat"><div class="stat-val" id="sLeft">193</div><div class="stat-label">Remaining</div></div>
+    <div class="stat"><div class="stat-val" id="sSpins">0</div><div class="stat-label">Spins</div></div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-top"><span>PROGRESS</span><span id="progTxt">0 / 193</span></div>
+    <div class="prog-bg"><div id="progBar"></div></div>
+  </div>
+
+  <div class="spinner-panel">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="spin-num-badge" id="spinBadge">SPIN #0</div>
+    <div class="spin-meta" id="spinMeta">AWAITING INPUT_</div>
+    <div id="nameDisplay" class="idle">_ _ _ _ _</div>
+    <div class="branch-badge" id="branchBadge">&nbsp;</div>
+  </div>
+
+  <div class="controls">
+    <button class="icon-btn" id="fsBtn">⛶ FULLSCREEN</button>
+    <button id="spinBtn">▶ SPIN</button>
+    <button class="icon-btn" id="dlBtn">↓ EXPORT CSV</button>
+  </div>
+
+  <div class="speed-wrap">
+    <span>SPEED</span>
+    <input type="range" id="speedSlider" min="1" max="5" value="3">
+    <span id="speedLabel">MID</span>
+  </div>
+
+  <div class="hint">PRESS <span style="color:var(--blue)">SPACE</span> TO SPIN &nbsp;·&nbsp; <span style="color:var(--blue)">F</span> FOR FULLSCREEN</div>
+
+  <div id="doneBanner">
+    <h2>ALL STUDENTS PICKED</h2>
+    <p>193 / 193 · SESSION COMPLETE · EXPORT LOG BELOW</p>
+  </div>
+
+  <div class="history-header">
+    <div class="section-title">// PICKED LOG</div>
+    <div class="section-title" id="histCount">[ 0 ENTRIES ]</div>
+  </div>
+  <div id="historyList"></div>
+
+</div>
+
+<script>
+const ISE = [
+  "A NISCHAL ALPE","A S SRINIVAS KUMAR","ABDUL BAASITH","ABDUL BASITH N",
+  "ABHAY SINGH","ADITYA CHOUDHARY","ADITYA P KULKARNI","AISHWARYA",
+  "AKSHATHA V","AMNA KHAN","ANANYA M","ANUSHA P N","APOORVA R PRAKASH",
+  "ARADHANA PRAJAPATI","ARYA KUMAR GOPAL","ASHANSH PRASAD","ASHISH KUMAR SHETTY",
+  "ASHWIN S","BHAGYASHREE M","BHARATH V","BINDURANI H A","BRIJESH M N",
+  "BUSHRA YASMEEN","CHEKIT SHARMA","CHINMAY K S","CHIRAG KANDOI",
+  "DEEPSHIKHA VISHWA KARMA","DHANYAMRAJU SRI ANUSHA","DISHA DEVADIGA",
+  "DRISHYA DECHAMMA M P","GANAVI N R","GANESH V","GOKUL D V","GRACY J",
+  "HANAMANTH","HARIPRIYA D K","HARSH","HARSHA N S","HARSHAVARDHAN G ASTAGI",
+  "HARSHAVARDHAN R","HEMA R","HIMANSHU MOOND","HIMANSHU RAJ","JENIFER MATHAIS",
+  "JNAN B","JNANA VAMSHI V","K V PAVANA","KARTHIK A V","KARTHIK K",
+  "KAVIRAJ Y A","KAVYA A","KHUSHBU K","KIRAN B R","KRISHNA BHARDWAJ M S",
+  "KRITHIKA K","LAVANYA J","LIKHITH GOWDA M","MADHU CHANDRIKA V",
+  "MANJUNATH L NAYAK","MANOJ GOWDA R","MANOJ KUMAR","MANOJ N M",
+  "MOHAMMED EMADULLA A","MOUNIKA V","NAMITHA S N","NAVEENKUMAR G N",
+  "OOKOTI SRI CHARITHA","P PAVAN","PAVAN NARAYAN L","PAVANI C V",
+  "PRANAV KUMAR MISHRA","PRAVEEN HALINGALI","PRIYANKA V C","PRUTHVI DEEPAM L A",
+  "PUNIT SUDARSHAN ALAGOUDAR","PUNITH GOWDA K S","PURVIKA S","RAHUL R UDHAND",
+  "RANJITHA K","RAVEESH SHIDDAPPA ANAJI","RINKU DUHAN","ROHAN R","ROHAN REDDY R",
+  "ROHIT KUMAR","ROOPA S CHOUKIMATH","S KIRAN REDDY","SABQATH AHMED SIDDIQUE",
+  "SAGAR P V","SAGAR SHARANAGOWDA POLICE PATIL","SANGAMESH","SANNIDHI U P",
+  "SANTOSH KUMAR","SARAH SMYRLINE R","SATHIYA PRAKASH G","SHAFIYA NOORAIN",
+  "SHALINI G","SHIVARAJ R","SHREESHA","SHREYA KRISHNA","SHREYA U","SKANDANA KV",
+  "SNEHA PRAKASH KOPPAD","SPOORTHI S ACHARYA","SUBRAMANI B S","SUPREETHA R",
+  "SWATHI N","SWATHI Y N","SYED SHAH WAQI ALI","SYED ZAID","TABREZ SHARIFF",
+  "TAMIRAH SHARIEFF","TEJAS PRASANNA P","THANU SHREE B S","THEJASWINI G K",
+  "VAIBHAV T R","VARUN M B","VEDASHREE G A","VIDHYA K K","VIKAS S",
+  "VISHAL RAJA S V","YASH RAJ SUMAN","YASHASHWINI A","YASHASWINI K S",
+  "ZOYA HARMAIN","NITHIN H S","KOTRESH G B","LOHITH K G","MANJUNATH B",
+  "NAGA ABHISHEK M N","NITESH B R","SANKET SANJAY DESAI","SHIRISHA V",
+  "TIPPESH B H","YOGISH T R"
+];
+const CSEDS = [
+  "ABHISHEK","ADITYA J","AISHWARYA S","AKSHATHA L PRASAD","AMAN KUMAR",
+  "AMOL KULKARNI","ANANYA M","ANISH RAJ","ASHISH KUMAR","BINDU M R",
+  "BUSHRA Z MULLA","CHANDANA H D","CHARAGONDA RAMYA SREE","DEVA KUMAR S",
+  "GREESHMA RAGHUNATH","HARSHIL M","HARSHITHA B","HOYSALA K R",
+  "JASLIN EBENEZER I","JEEVAN TEJA S","K DHEERAJ","KAMALESH R",
+  "KARTHIK M KRISHNA","KASHIK KHANDELWAL","KRISHNAKANTH","MADDHA MANASA",
+  "MANOJ S","MOHAMMED ISSA ILYAS","MOHAMMED ZAIDAAN SHIRAZ","NAGA MYTHRI Y",
+  "NAMRATHA K KADAM","NANDINI R","NAZIMA KHANUM","PAVITRA NARAYAN BHAT",
+  "PAYASWINI","PRANAV J","PRUTHVI C P","PULIKANTI ANUSHA","RACHITHA M RAIKAR",
+  "RAINA ELFREDA REGO","S VANI REDDY","SAFEEN C D AHAMED","SAHIL",
+  "SHRIYA DHARMENDRA RATH","SHRUTHI SAGAR R","SHRUTIPARNA DAS","SHUBHASHREE S",
+  "SIDDHARTH B N","SOUMYAJIT HAZRA","SUMANTH G","SWARNIM DESHPANDE","SWATHI A",
+  "THANUSHRI R","UMESH SHANTESH HAKKAPAKKI","VARSHA S","Y PRADEEP VARMA",
+  "YASHASWINI T","YATHIN AIYAPPA P V","R PREM CHANDRAN"
+];
+
+const ALL = [
+  ...ISE.map(n => ({ name: n, branch: 'ISE' })),
+  ...CSEDS.map(n => ({ name: n, branch: 'CSE-DS' }))
+];
+
+let pool = shuffle([...ALL]), picked = [], spinNum = 0, busy = false;
+const SPEED_MAP  = { 1:'SLOW', 2:'LOW', 3:'MID', 4:'HIGH', 5:'FAST' };
+const TICK_BASE  = { 1:160, 2:110, 3:70, 4:40, 5:22 };
+
+// MATRIX RAIN
+(function(){
+  const cv = document.getElementById('matrix');
+  const cx = cv.getContext('2d');
+  const ch = '01アイウエオカキクケコABCDEF0101';
+  let cols, drops;
+  function resize(){
+    cv.width = window.innerWidth; cv.height = window.innerHeight;
+    cols = Math.floor(cv.width/18); drops = Array(cols).fill(1);
+  }
+  function draw(){
+    cx.fillStyle='rgba(8,8,0,0.06)'; cx.fillRect(0,0,cv.width,cv.height);
+    cx.fillStyle='#7a5c00'; cx.font='13px Share Tech Mono';
+    drops.forEach((y,i)=>{
+      cx.fillText(ch[Math.floor(Math.random()*ch.length)], i*18, y*18);
+      if(y*18>cv.height && Math.random()>0.975) drops[i]=0;
+      drops[i]++;
+    });
+  }
+  resize(); window.addEventListener('resize',resize); setInterval(draw,45);
+})();
+
+// CLOCK
+function tick(){ document.getElementById('clock').textContent = new Date().toTimeString().slice(0,8); }
+tick(); setInterval(tick,1000);
+
+// AUDIO
+const AC = new (window.AudioContext||window.webkitAudioContext)();
+function beep(f,d,t='square',v=0.07){
+  const o=AC.createOscillator(), g=AC.createGain();
+  o.connect(g); g.connect(AC.destination);
+  o.type=t; o.frequency.value=f;
+  g.gain.setValueAtTime(v,AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+d);
+  o.start(); o.stop(AC.currentTime+d);
+}
+function playTick()   { beep(600+Math.random()*300, 0.04, 'square', 0.05); }
+function playWinner() { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.18,'sine',.12),i*90)); }
+function playDone()   { [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,.25,'sine',.1),i*110)); }
+
+// CONFETTI
+function confetti(){
+  const cols=['#ffd700','#ffffff','#ffd700','#ffffff','#ffe566'];
+  for(let i=0;i<45;i++) setTimeout(()=>{
+    const el=document.createElement('div');
+    el.className='confetti-piece';
+    el.style.cssText=`left:${Math.random()*100}vw;top:${Math.random()*30}vh;background:${cols[Math.floor(Math.random()*cols.length)]};transform:rotate(${Math.random()*360}deg);animation-duration:${1+Math.random()}s`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),2500);
+  }, i*28);
+}
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a; }
+
+function updateStats(){
+  document.getElementById('sPicked').textContent = picked.length;
+  document.getElementById('sLeft').textContent   = pool.length;
+  document.getElementById('sSpins').textContent  = spinNum;
+  const pct = (picked.length/ALL.length)*100;
+  document.getElementById('progBar').style.width = pct+'%';
+  document.getElementById('progTxt').textContent = `${picked.length} / ${ALL.length}`;
+  document.getElementById('histCount').textContent = `[ ${picked.length} ENTRIES ]`;
+}
+
+function addHistory(s, n){
+  const el=document.createElement('div');
+  const cseds = s.branch==='CSE-DS';
+  el.className='h-item'+(cseds?' cseds-item':'');
+  el.innerHTML=`<span class="h-num">#${String(n).padStart(3,'0')}</span><span class="h-name">${s.name}</span><span class="h-branch ${cseds?'cseds':'ise'}">${s.branch}</span>`;
+  document.getElementById('historyList').prepend(el);
+}
+
+const nd=document.getElementById('nameDisplay');
+const bb=document.getElementById('branchBadge');
+const spinBtn=document.getElementById('spinBtn');
+const spinMeta=document.getElementById('spinMeta');
+
+function doSpin(){
+  if(busy||pool.length===0) return;
+  if(AC.state==='suspended') AC.resume();
+  busy=true; spinBtn.disabled=true;
+  spinNum++;
+  document.getElementById('spinBadge').textContent=`SPIN #${spinNum}`;
+  updateStats();
+
+  const wi=Math.floor(Math.random()*pool.length);
+  const winner=pool[wi]; pool.splice(wi,1);
+
+  const speed=parseInt(document.getElementById('speedSlider').value);
+  const baseMs=TICK_BASE[speed];
+  const totalT=24; let t=0;
+  const flash=pool.length>0?pool.map(s=>s.name):['...'];
+
+  nd.className='spin'; bb.className='branch-badge'; bb.innerHTML='&nbsp;';
+  spinMeta.textContent='RANDOMISING...';
+
+  function next(){
+    if(t<totalT){
+      const delay=t<14?baseMs:baseMs+(t-14)*18;
+      nd.textContent=flash[Math.floor(Math.random()*flash.length)];
+      playTick(); t++;
+      setTimeout(next,delay);
+    } else {
+      nd.className='glitch'; nd.textContent=winner.name;
+      setTimeout(()=>{
+        nd.className='winner'; nd.textContent=winner.name;
+        const cseds=winner.branch==='CSE-DS';
+        bb.className='branch-badge '+(cseds?'cseds':'ise');
+        bb.textContent=winner.branch;
+        spinMeta.textContent='SELECTED ✓';
+        playWinner(); confetti();
+        picked.push(winner); addHistory(winner,picked.length); updateStats();
+        setTimeout(()=>{
+          busy=false;
+          if(pool.length===0){
+            spinBtn.disabled=true;
+            nd.className='allDone'; nd.textContent='ALL DONE';
+            document.getElementById('doneBanner').style.display='block';
+            spinMeta.textContent='SESSION COMPLETE';
+            playDone();
+          } else {
+            spinBtn.disabled=false;
+            spinMeta.textContent='AWAITING INPUT_';
+          }
+        },1000);
+      },160);
+    }
+  }
+  next();
+}
+
+spinBtn.addEventListener('click', doSpin);
+
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space'&&!e.target.matches('input,button')){ e.preventDefault(); doSpin(); }
+  if(e.code==='KeyF') toggleFS();
+});
+
+document.getElementById('speedSlider').addEventListener('input', function(){
+  document.getElementById('speedLabel').textContent=SPEED_MAP[this.value];
+});
+
+function toggleFS(){
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().catch(()=>{});
+    document.getElementById('fsBtn').textContent='✕ EXIT FULL';
+  } else {
+    document.exitFullscreen();
+    document.getElementById('fsBtn').textContent='⛶ FULLSCREEN';
+  }
+}
+document.getElementById('fsBtn').addEventListener('click', toggleFS);
+
+document.getElementById('dlBtn').addEventListener('click', ()=>{
+  if(picked.length===0){ alert('No names picked yet.'); return; }
+  const rows=['#,Name,Branch'];
+  picked.forEach((s,i)=>rows.push(`${i+1},${s.name},${s.branch}`));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download=`spinner_log_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
+updateStats();
+</script>
+</body>
+</html>
